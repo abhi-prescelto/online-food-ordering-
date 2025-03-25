@@ -1,0 +1,239 @@
+//------jsp------//
+<%@ page language="java" contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Food Ordering System</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Lexend:wght@300;400;600&display=swap');
+
+        body {
+            font-family: 'Lexend', sans-serif;
+            background: radial-gradient(circle at top left, #ff7e5f, #feb47b);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            margin: 0;
+        }
+
+        .container {
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 20px;
+            padding: 30px;
+            width: 400px;
+            box-shadow: 0 8px 16px rgba(0, 0, 0, 0.2);
+            backdrop-filter: blur(15px);
+            text-align: center;
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            animation: fadeIn 1s ease-in-out;
+        }
+
+        h2 {
+            font-size: 24px;
+            color: #ffffff;
+            text-shadow: 0px 0px 10px rgba(255, 255, 255, 0.5);
+            margin-bottom: 15px;
+            animation: slideDown 0.8s ease-in-out;
+        }
+
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: none;
+            border-radius: 10px;
+            font-size: 16px;
+            transition: 0.3s;
+            background: rgba(255, 255, 255, 0.2);
+            color: #fff;
+            outline: none;
+        }
+
+        input::placeholder, textarea::placeholder {
+            color: rgba(255, 255, 255, 0.6);
+        }
+
+        input:focus, select:focus, textarea:focus {
+            border: 1px solid rgba(255, 255, 255, 0.5);
+            box-shadow: 0 0 8px rgba(255, 255, 255, 0.6);
+        }
+
+        button {
+            background: linear-gradient(to right, #ff416c, #ff4b2b);
+            color: white;
+            border: none;
+            padding: 12px;
+            width: 100%;
+            border-radius: 10px;
+            cursor: pointer;
+            font-size: 18px;
+            transition: 0.3s;
+            text-transform: uppercase;
+            font-weight: 600;
+        }
+
+        button:hover {
+            background: linear-gradient(to right, #ff4b2b, #ff416c);
+            transform: scale(1.05);
+            box-shadow: 0px 0px 10px rgba(255, 75, 43, 0.7);
+        }
+
+        .loading {
+            display: none;
+            margin-top: 10px;
+            font-size: 14px;
+            color: #ddd;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        @keyframes slideDown {
+            from { opacity: 0; transform: translateY(-30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>🍔 Online Food Order</h2>
+    <form id="foodOrderForm" action="order" method="post">
+        <input type="text" name="customerName" placeholder="Your Name" required>
+        <input type="tel" name="phoneNumber" placeholder="Phone Number" required>
+        <select name="foodItem" required>
+            <option value="">Select a Dish</option>
+            <option value="Burger">Burger</option>
+            <option value="Pizza">Pizza</option>
+            <option value="Pasta">Pasta</option>
+            <option value="Sushi">Sushi</option>
+            <option value="Tacos">Tacos</option>
+        </select>
+        <input type="number" name="quantity" placeholder="Quantity" min="1" required>
+        <textarea name="notes" placeholder="Additional Notes (Optional)"></textarea>
+        <button type="submit">Place Order</button>
+        <p class="loading">⏳ Processing your order...</p>
+    </form>
+</div>
+
+<script>
+    document.getElementById('foodOrderForm').addEventListener('submit', function(event) {
+        document.querySelector('.loading').style.display = 'block';
+    });
+</script>
+
+</body>
+</html>
+//-------servlet-----------//
+package com.example.foodorder;
+
+import com.google.gson.JsonObject;
+import jakarta.servlet.ServletException;
+import jakarta.servlet.annotation.WebServlet;
+import jakarta.servlet.http.HttpServlet;
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.io.PrintWriter;
+
+@WebServlet("/order")
+public class FoodOrderServlet extends HttpServlet {
+    private static final long serialVersionUID = 1L;
+
+    protected void doGet(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        // Example: Retrieving a sample food order request
+        JsonObject jsonResponse = new JsonObject();
+        jsonResponse.addProperty("message", "GET Request - Food Order Retrieved Successfully");
+        jsonResponse.addProperty("orderId", 101);
+        jsonResponse.addProperty("customerName", "Rahul Sharma");
+        jsonResponse.addProperty("foodItem", "Margherita Pizza");
+        jsonResponse.addProperty("orderDate", "2025-03-21");
+
+        PrintWriter out = response.getWriter();
+        out.print(jsonResponse);
+        out.flush();
+    }
+
+    protected void doPost(HttpServletRequest request, HttpServletResponse response)
+            throws ServletException, IOException {
+        response.setContentType("application/json");
+        response.setCharacterEncoding("UTF-8");
+
+        // Retrieving form data from the POST request
+        String customerName = request.getParameter("customerName");
+        String phoneNumber = request.getParameter("phoneNumber");
+        String foodItem = request.getParameter("foodItem");
+        String orderDate = request.getParameter("orderDate");
+        String notes = request.getParameter("notes");
+
+        JsonObject jsonResponse = new JsonObject();
+
+        if (customerName != null && phoneNumber != null && foodItem != null && orderDate != null) {
+            int orderId = (int) (Math.random() * 100000); // Generate a random order ID
+
+            jsonResponse.addProperty("message", "Food Ordered Successfully");
+            jsonResponse.addProperty("orderId", orderId);
+            jsonResponse.addProperty("customerName", customerName);
+            jsonResponse.addProperty("phoneNumber", phoneNumber);
+            jsonResponse.addProperty("foodItem", foodItem);
+            jsonResponse.addProperty("orderDate", orderDate);
+            jsonResponse.addProperty("notes", notes != null ? notes : "");
+        } else {
+            jsonResponse.addProperty("error", "Invalid Request. Please fill all required fields.");
+        }
+
+        PrintWriter out = response.getWriter();
+        out.print(jsonResponse);
+        out.flush();
+    }
+}
+//------------(pom.xml)----------//
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <modelVersion>4.0.0</modelVersion>
+
+    <groupId>com.example</groupId>
+    <artifactId>demo</artifactId>
+    <version>1.0-SNAPSHOT</version>
+    <packaging>war</packaging>
+
+    <properties>
+        <maven.compiler.source>17</maven.compiler.source>
+        <maven.compiler.targegt>17</maven.compiler.targegt>
+    </properties>
+
+    <dependencies>
+        <dependency>
+            <groupId>jakarta.servlet</groupId>
+            <artifactId>jakarta.servlet-api</artifactId>
+            <version>5.0.0</version>
+            <scope>provided</scope>
+        </dependency>
+
+        <!-- Gson for JSON Handling -->
+        <dependency>
+            <groupId>com.google.code.gson</groupId>
+            <artifactId>gson</artifactId>
+            <version>2.8.9</version>
+        </dependency>
+    </dependencies>
+
+    <build>
+        <finalName>demo</finalName>
+    </build>
+</project>
+//-----------------------(web.xml)-------------------------//
+<servlet-mapping>
+    <servlet-name>com.example.demo.OrderServlet</servlet-name>
+    <url-pattern>/order</url-pattern>
+</servlet-mapping>
