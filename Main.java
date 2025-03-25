@@ -7,7 +7,7 @@ class InvalidInputException extends Exception {
     }
 }
 
-class Order {
+class Order extends Thread {
     protected int orderId;
     protected String customerName;
     protected String[] orderedItems;
@@ -26,6 +26,12 @@ class Order {
         this(0, "Unknown");
     }
 
+    @Override
+    public void run() {
+        interact();
+        printOrderDetails();
+    }
+
     public void interact() {
         Scanner scanner = new Scanner(System.in);
 
@@ -39,12 +45,12 @@ class Order {
                 }
             } catch (InputMismatchException e) {
                 System.out.println("Invalid input. Please enter a positive integer.");
-                scanner.next();
+                scanner.next(); // Clear invalid input
             } catch (InvalidInputException e) {
                 System.out.println(e.getMessage());
             }
         }
-        scanner.nextLine();
+        scanner.nextLine(); // Consume newline
 
         orderedItems = new String[numItems];
         double[] itemPrices = new double[numItems];
@@ -74,7 +80,7 @@ class Order {
                     System.out.println(e.getMessage());
                 }
             }
-            scanner.nextLine();
+            scanner.nextLine(); // Consume newline
         }
 
         calculateTotalPrice(itemPrices);
@@ -162,76 +168,44 @@ public class Main {
         for (int i = 0; i < numOrders; i++) {
             System.out.println("\nEntering details for Order " + (i + 1) + ":");
 
-            int orderId = 0;
-            while (orderId <= 0) {
-                System.out.print("Enter Order ID (positive integer): ");
-                try {
-                    orderId = scanner.nextInt();
-                    if (orderId <= 0) {
-                        throw new InvalidInputException("Order ID must be a positive integer.");
-                    }
-                } catch (InputMismatchException e) {
-                    System.out.println("Invalid input. Please enter a positive integer.");
-                    scanner.next();
-                } catch (InvalidInputException e) {
-                    System.out.println(e.getMessage());
-                }
-            }
+            System.out.print("Enter Order ID: ");
+            int orderId = scanner.nextInt();
             scanner.nextLine();
 
-            String customerName = "";
-            while (customerName.isEmpty()) {
-                System.out.print("Enter Customer Name: ");
-                customerName = scanner.nextLine().trim();
-                if (customerName.isEmpty()) {
-                    System.out.println("Customer Name cannot be empty.");
-                }
-            }
+            System.out.print("Enter Customer Name: ");
+            String customerName = scanner.nextLine();
 
-            String isSpecialOrder = "";
-            while (!isSpecialOrder.equalsIgnoreCase("yes") && !isSpecialOrder.equalsIgnoreCase("no")) {
-                System.out.print("Is this a special order? (yes/no): ");
-                isSpecialOrder = scanner.nextLine().trim();
-                if (!isSpecialOrder.equalsIgnoreCase("yes") && !isSpecialOrder.equalsIgnoreCase("no")) {
-                    System.out.println("Invalid input. Please enter 'yes' or 'no'.");
-                }
-            }
+            System.out.print("Is this a special order? (yes/no): ");
+            String isSpecialOrder = scanner.nextLine().trim();
 
             if (isSpecialOrder.equalsIgnoreCase("yes")) {
-                double discount = -1;
-                while (discount < 0) {
-                    System.out.print("Enter Discount (non-negative number): ");
-                    try {
-                        discount = scanner.nextDouble();
-                        if (discount < 0) {
-                            throw new InvalidInputException("Discount cannot be negative.");
-                        }
-                    } catch (InputMismatchException e) {
-                        System.out.println("Invalid input. Please enter a valid discount.");
-                        scanner.next();
-                    } catch (InvalidInputException e) {
-                        System.out.println(e.getMessage());
-                    }
-                }
+                System.out.print("Enter Discount: ");
+                double discount = scanner.nextDouble();
                 scanner.nextLine();
 
                 System.out.print("Enter Special Note: ");
-                String specialNote = scanner.nextLine().trim();
+                String specialNote = scanner.nextLine();
 
                 orders[i] = new SpecialOrder(orderId, customerName, discount, specialNote);
             } else {
                 orders[i] = new Order(orderId, customerName);
             }
-
-            orders[i].interact();
         }
 
-        System.out.println("\nAll Orders:");
+        System.out.println("\nProcessing orders...");
         for (Order order : orders) {
-            order.printOrderDetails();
-            System.out.println("-------------------------");
+            order.start();
         }
 
+        for (Order order : orders) {
+            try {
+                order.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println("\nAll orders processed.");
         scanner.close();
     }
 }
