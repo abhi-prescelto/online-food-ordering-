@@ -1,0 +1,163 @@
+import javax.swing.*;
+import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+
+class OrderSystemGUI {
+    private JFrame frame;
+    private JTextField customerNameField, itemCountField, discountField, specialNoteField;
+    private JTextArea orderDetailsArea;
+    private JButton submitButton;
+    private JCheckBox specialOrderCheckBox;
+
+    public OrderSystemGUI() {
+        frame = new JFrame("Order Management System");
+        frame.setSize(500, 600);
+        frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+        frame.setLayout(new GridBagLayout());
+        frame.getContentPane().setBackground(new Color(44, 62, 80));
+
+        GridBagConstraints gbc = new GridBagConstraints();
+        gbc.insets = new Insets(10, 10, 10, 10);
+        gbc.fill = GridBagConstraints.HORIZONTAL;
+
+        JLabel customerLabel = createLabel("Customer Name:");
+        gbc.gridx = 0; gbc.gridy = 0;
+        frame.add(customerLabel, gbc);
+
+        customerNameField = createTextField();
+        gbc.gridx = 1;
+        frame.add(customerNameField, gbc);
+
+        JLabel itemCountLabel = createLabel("Number of Items:");
+        gbc.gridx = 0; gbc.gridy = 1;
+        frame.add(itemCountLabel, gbc);
+
+        itemCountField = createTextField();
+        gbc.gridx = 1;
+        frame.add(itemCountField, gbc);
+
+        specialOrderCheckBox = new JCheckBox("Special Order");
+        specialOrderCheckBox.setForeground(Color.WHITE);
+        specialOrderCheckBox.setBackground(new Color(44, 62, 80));
+        gbc.gridx = 0; gbc.gridy = 2; gbc.gridwidth = 2;
+        frame.add(specialOrderCheckBox, gbc);
+
+        JLabel discountLabel = createLabel("Discount:");
+        gbc.gridx = 0; gbc.gridy = 3; gbc.gridwidth = 1;
+        frame.add(discountLabel, gbc);
+
+        discountField = createTextField();
+        discountField.setEnabled(false);
+        gbc.gridx = 1;
+        frame.add(discountField, gbc);
+
+        JLabel specialNoteLabel = createLabel("Special Note:");
+        gbc.gridx = 0; gbc.gridy = 4;
+        frame.add(specialNoteLabel, gbc);
+
+        specialNoteField = createTextField();
+        specialNoteField.setEnabled(false);
+        gbc.gridx = 1;
+        frame.add(specialNoteField, gbc);
+
+        specialOrderCheckBox.addActionListener(e -> {
+            boolean selected = specialOrderCheckBox.isSelected();
+            discountField.setEnabled(selected);
+            specialNoteField.setEnabled(selected);
+        });
+
+        submitButton = new JButton("Submit Order");
+        submitButton.setBackground(new Color(52, 152, 219));
+        submitButton.setForeground(Color.WHITE);
+        submitButton.setFont(new Font("Arial", Font.BOLD, 14));
+        gbc.gridx = 0; gbc.gridy = 5; gbc.gridwidth = 2;
+        frame.add(submitButton, gbc);
+
+        orderDetailsArea = new JTextArea(10, 30);
+        orderDetailsArea.setEditable(false);
+        orderDetailsArea.setBackground(Color.WHITE);
+        orderDetailsArea.setFont(new Font("Monospaced", Font.PLAIN, 14));
+
+        JScrollPane scrollPane = new JScrollPane(orderDetailsArea);
+        gbc.gridx = 0; gbc.gridy = 6; gbc.gridwidth = 2;
+        frame.add(scrollPane, gbc);
+
+        submitButton.addActionListener(e -> processOrder());
+
+        frame.setVisible(true);
+    }
+
+    private JLabel createLabel(String text) {
+        JLabel label = new JLabel(text);
+        label.setForeground(Color.WHITE);
+        label.setFont(new Font("Arial", Font.BOLD, 14));
+        return label;
+    }
+
+    private JTextField createTextField() {
+        JTextField textField = new JTextField(15);
+        textField.setFont(new Font("Arial", Font.PLAIN, 14));
+        return textField;
+    }
+
+    private void processOrder() {
+        String customerName = customerNameField.getText().trim();
+        String itemCountText = itemCountField.getText().trim();
+
+        if (customerName.isEmpty() || itemCountText.isEmpty()) {
+            JOptionPane.showMessageDialog(frame, "All fields must be filled.", "Error", JOptionPane.ERROR_MESSAGE);
+            return;
+        }
+
+        try {
+            int itemCount = Integer.parseInt(itemCountText);
+            if (itemCount <= 0) throw new NumberFormatException();
+
+            String[] items = new String[itemCount];
+            double[] prices = new double[itemCount];
+            double totalPrice = 0;
+
+            for (int i = 0; i < itemCount; i++) {
+                items[i] = JOptionPane.showInputDialog(frame, "Enter item " + (i + 1) + " name:");
+                String priceInput = JOptionPane.showInputDialog(frame, "Enter price for " + items[i] + ":");
+                prices[i] = Double.parseDouble(priceInput);
+                totalPrice += prices[i];
+            }
+
+            double discount = 0;
+            String specialNote = "";
+            if (specialOrderCheckBox.isSelected()) {
+                String discountText = discountField.getText().trim();
+                specialNote = specialNoteField.getText().trim();
+                if (!discountText.isEmpty()) {
+                    discount = Double.parseDouble(discountText);
+                }
+                totalPrice -= discount;
+                if (totalPrice < 0) totalPrice = 0;
+            }
+
+            StringBuilder details = new StringBuilder("Order Details:\n");
+            details.append("Customer: ").append(customerName).append("\n");
+            details.append("Items Ordered:\n");
+
+            for (int i = 0; i < itemCount; i++) {
+                details.append(items[i]).append(" - $").append(prices[i]).append("\n");
+            }
+
+            if (specialOrderCheckBox.isSelected()) {
+                details.append("Discount: $").append(discount).append("\n");
+                details.append("Special Note: ").append(specialNote).append("\n");
+            }
+
+            details.append("Total Price: $").append(totalPrice);
+            orderDetailsArea.setText(details.toString());
+        } catch (NumberFormatException ex) {
+            JOptionPane.showMessageDialog(frame, "Invalid input. Please enter a valid number.", "Error", JOptionPane.ERROR_MESSAGE);
+        }
+    }
+
+    public static void main(String[] args) {
+        SwingUtilities.invokeLater(OrderSystemGUI::new);
+    }
+}
