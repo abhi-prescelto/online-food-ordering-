@@ -1,0 +1,201 @@
+package csconer;
+
+import java.util.Scanner;
+
+public class xyz {
+    protected int orderId;
+    protected String customerName;
+    protected String[] orderedItems;
+    protected double totalPrice;
+    protected String orderStatus;
+
+    public xyz(int orderId, String customerName) {
+        this.orderId = orderId;
+        this.customerName = customerName;
+        this.orderedItems = new String[0];
+        this.totalPrice = 0.0;
+        this.orderStatus = "Pending";
+    }
+
+    public void interact() {
+        Scanner scanner = new Scanner(System.in);
+
+        int numItems = 0;
+        while (numItems <= 0) {
+            System.out.print("Enter number of items ordered (positive number): ");
+            while (!scanner.hasNextInt()) {
+                System.out.println("Invalid input. Please enter a positive integer.");
+                scanner.next();
+            }
+            numItems = scanner.nextInt();
+            if (numItems <= 0) {
+                System.out.println("Number of items must be a positive integer.");
+            }
+        }
+        scanner.nextLine();
+
+        orderedItems = new String[numItems];
+        double[] itemPrices = new double[numItems];
+
+        for (int i = 0; i < numItems; i++) {
+            System.out.print("Enter item " + (i + 1) + ": ");
+            orderedItems[i] = scanner.nextLine().trim();
+            while (orderedItems[i].isEmpty()) {
+                System.out.println("Item name cannot be empty. Please re-enter:");
+                orderedItems[i] = scanner.nextLine().trim();
+            }
+
+            System.out.print("Enter price for " + orderedItems[i] + " (positive number): ");
+            while (!scanner.hasNextDouble()) {
+                System.out.println("Invalid input. Please enter a positive number.");
+                scanner.next();
+            }
+            double price = scanner.nextDouble();
+            while (price <= 0) {
+                System.out.println("Price must be a positive number. Please re-enter:");
+                price = scanner.nextDouble();
+            }
+            itemPrices[i] = price;
+            scanner.nextLine();
+        }
+
+        calculateTotalPrice(itemPrices);
+    }
+
+    public void calculateTotalPrice(double[] itemPrices) {
+        double sum = 0;
+        for (double price : itemPrices) {
+            sum += price;
+        }
+        totalPrice = sum;
+    }
+
+    public void calculateTotalPrice(double itemPrice, int quantity) {
+        totalPrice = itemPrice * quantity;
+    }
+
+    public void printOrderDetails() {
+        System.out.println("\nOrder ID: " + orderId);
+        System.out.println("Customer Name: " + customerName);
+        System.out.print("Ordered Items: ");
+        for (String item : orderedItems) {
+            System.out.print(item + " ");
+        }
+        System.out.println();
+        System.out.println("Total Price: $" + totalPrice);
+        System.out.println("Order Status: " + orderStatus);
+    }
+}
+
+class SpecialOrder extends xyz {
+    private double discount;
+    private String specialNote;
+
+    public SpecialOrder(int orderId, String customerName, double discount, String specialNote) {
+        super(orderId, customerName);
+        this.discount = discount;
+        this.specialNote = specialNote;
+    }
+
+    @Override
+    public void calculateTotalPrice(double[] itemPrices) {
+        super.calculateTotalPrice(itemPrices);
+        totalPrice -= discount;
+    }
+
+    @Override
+    public void printOrderDetails() {
+        super.printOrderDetails();
+        System.out.println("Discount: $" + discount);
+        System.out.println("Special Note: " + specialNote);
+    }
+}
+
+class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        int numOrders = 0;
+        while (numOrders <= 0) {
+            System.out.print("Enter number of orders (positive number): ");
+            while (!scanner.hasNextInt()) {
+                System.out.println("Invalid input. Please enter a positive integer.");
+                scanner.next();
+            }
+            numOrders = scanner.nextInt();
+            if (numOrders <= 0) {
+                System.out.println("Number of orders must be a positive integer.");
+            }
+        }
+        scanner.nextLine();
+
+        xyz[] orders = new xyz[numOrders];
+
+        for (int i = 0; i < numOrders; i++) {
+            System.out.println("\nEntering details for Order " + (i + 1) + ":");
+
+            int orderId = 0;
+            while (orderId <= 0) {
+                System.out.print("Enter Order ID (positive integer): ");
+                while (!scanner.hasNextInt()) {
+                    System.out.println("Invalid input. Please enter a positive integer.");
+                    scanner.next(); // Clear invalid input
+                }
+                orderId = scanner.nextInt();
+                if (orderId <= 0) {
+                    System.out.println("Order ID must be a positive integer.");
+                }
+            }
+            scanner.nextLine();
+
+            String customerName = "";
+            while (customerName.isEmpty()) {
+                System.out.print("Enter Customer Name: ");
+                customerName = scanner.nextLine().trim();
+                if (customerName.isEmpty()) {
+                    System.out.println("Customer Name cannot be empty.");
+                }
+            }
+
+            String isSpecialOrder = "";
+            while (!isSpecialOrder.equalsIgnoreCase("yes") && !isSpecialOrder.equalsIgnoreCase("no")) {
+                System.out.print("Is this a special order? (yes/no): ");
+                isSpecialOrder = scanner.nextLine().trim();
+                if (!isSpecialOrder.equalsIgnoreCase("yes") && !isSpecialOrder.equalsIgnoreCase("no")) {
+                    System.out.println("Invalid input. Please enter 'yes' or 'no'.");
+                }
+            }
+
+            if (isSpecialOrder.equalsIgnoreCase("yes")) {
+                double discount = -1;
+                while (discount < 0) {
+                    System.out.print("Enter Discount (positive number): ");
+                    while (!scanner.hasNextDouble()) {
+                        System.out.println("Invalid input. Please enter a non-negative number.");
+                        scanner.next();
+                    }
+                    discount = scanner.nextDouble();
+                    if (discount < 0) {
+                        System.out.println("Discount cannot be negative.");
+                    }
+                }
+                scanner.nextLine();
+
+                System.out.print("Enter Special Note: ");
+                String specialNote = scanner.nextLine().trim();
+
+                orders[i] = new SpecialOrder(orderId, customerName, discount, specialNote);
+            } else {
+                orders[i] = new xyz(orderId, customerName);
+            }
+
+            orders[i].interact();
+        }
+
+        System.out.println("\nAll Orders:");
+        for (xyz order : orders) {
+            order.printOrderDetails();
+            System.out.println("-------------------------");
+        }
+    }
+}
