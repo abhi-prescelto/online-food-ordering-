@@ -1,0 +1,208 @@
+import java.sql.*;
+import java.util.InputMismatchException;
+import java.util.Scanner;
+
+class DatabaseHelper {
+    private static final String URL = "jdbc:mysql://localhost:3306/mydb";
+    private static final String USER = "root";
+    private static final String PASSWORD = "12345";
+
+    // Establish Database Connection
+    public static Connection getConnection() throws SQLException {
+        return DriverManager.getConnection(URL, USER, PASSWORD);
+    }
+
+    // Insert Order into Database
+    public static void insertOrder(int orderId, String customerName, String items, double totalPrice, String status, double discount, String specialNote) {
+        String query = "INSERT INTO orders (id, customer_name, items, total_price, order_status, discount, special_note) VALUES (?, ?, ?, ?, ?, ?, ?)";
+
+        try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setInt(1, orderId);
+            pstmt.setString(2, customerName);
+            pstmt.setString(3, items);
+            pstmt.setDouble(4, totalPrice);
+            pstmt.setString(5, status);
+            pstmt.setDouble(6, discount);
+            pstmt.setString(7, specialNote);
+            pstmt.executeUpdate();
+            System.out.println("✅ Order saved to database!");
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+
+    // Update Order Status in Database
+    public static void updateOrderStatus(int orderId, String status) {
+        String query = "UPDATE orders SET order_status = ? WHERE id = ?";
+        try (Connection conn = getConnection(); PreparedStatement pstmt = conn.prepareStatement(query)) {
+            pstmt.setString(1, status);
+            pstmt.setInt(2, orderId);
+            int updatedRows = pstmt.executeUpdate();
+            if (updatedRows > 0) {
+                System.out.println("✅ Order ID " + orderId + " status updated to: " + status);
+            } else {
+                System.out.println("⚠ Order ID " + orderId + " not found.");
+            }
+        } catch (SQLException e) {
+            e.printStackTrace();
+        }
+    }
+}
+
+class InvalidInputException extends Exception {
+    public InvalidInputException(String message) {
+        super(message);
+    }
+}
+
+class Order extends Thread {
+    protected int orderId;
+    protected String customerName;
+    protected String[] orderedItems;
+    protected double totalPrice;
+    protected String orderStatus;
+
+    public Order(int orderId, String customerName) {
+        this.orderId = orderId;
+        this.customerName = customerName;
+        this.orderedItems = new String[0];
+        this.totalPrice = 0.0;
+        this.orderStatus = "Pending";
+    }
+
+    @Override
+    public void run() {
+        interact();
+        saveToDatabase();
+        printOrderDetails();
+        completeOrder(); // Update order status
+    }
+
+    public void interact() {
+        Scanner scanner = new Scanner(System.in);
+
+        int numItems = 0;
+        while (numItems <= 0) {
+            System.out.print("Enter number of items ordered: ");
+            try {
+                numItems = scanner.nextInt();
+                if (numItems <= 0) {
+                    throw new InvalidInputException("⚠ Number of items must be positive.");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("⚠ Invalid input. Please enter a positive integer.");
+                scanner.next();
+            } catch (InvalidInputException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+        scanner.nextLine();
+
+        orderedItems = new String[numItems];
+        double[] itemPrices = new double[numItems];
+
+        for (int i = 0; i < numItems; i++) {
+            while (true) {
+                System.out.print("Enter item " + (i + 1) + ": ");
+                orderedItems[i] = scanner.nextLine().trim();
+                if (!orderedItems[i].isEmpty()) break;
+                System.out.println("⚠ Item name cannot be empty. Please re-enter.");
+            }
+
+            while (true) {
+                System.out.print("Enter price for " + orderedItems[i] + ": ");
+                try {
+                    itemPrices[i] = scanner.nextDouble();
+                    if (itemPrices[i] <= 0) {
+                        throw new InvalidInputException("⚠ Price must be positive.");
+                    }
+                    break;
+                } catch (InputMismatchException e) {
+                    System.out.println("⚠ Invalid input. Please enter a valid price.");
+                    scanner.next();
+                } catch (InvalidInputException e) {
+                    System.out.println(e.getMessage());
+                }
+            }
+            scanner.nextLine();
+        }
+
+        calculateTotalPrice(itemPrices);
+    }
+
+    public void calculateTotalPrice(double[] itemPrices) {
+        double sum = 0;
+        for (double price : itemPrices) sum += price;
+        totalPrice = sum;
+    }
+
+    public void saveToDatabase() {
+        String itemsStr = String.join(", ", orderedItems);
+        DatabaseHelper.insertOrder(orderId, customerName, itemsStr, totalPrice, orderStatus, 0, "");
+    }
+
+    public void printOrderDetails() {
+        System.out.println("\n📝 Order Details:");
+        System.out.println("📌 Order ID: " + orderId);
+        System.out.println("👤 Customer: " + customerName);
+        System.out.println("💰 Total Price: $" + String.format("%.2f", totalPrice));
+        System.out.println("📦 Status: " + orderStatus);
+    }
+
+    public void completeOrder() {
+        this.orderStatus = "Completed";
+        DatabaseHelper.updateOrderStatus(orderId, orderStatus);
+    }
+}
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+
+        int numOrders = 0;
+        while (numOrders <= 0) {
+            System.out.print("Enter number of orders: ");
+            try {
+                numOrders = scanner.nextInt();
+                if (numOrders <= 0) {
+                    throw new InvalidInputException("⚠ Number of orders must be positive.");
+                }
+            } catch (InputMismatchException e) {
+                System.out.println("⚠ Invalid input. Please enter a positive integer.");
+                scanner.next();
+            } catch (InvalidInputException e) {
+                System.out.println(e.getMessage());
+            }
+        }
+        scanner.nextLine();
+
+        Order[] orders = new Order[numOrders];
+
+        for (int i = 0; i < numOrders; i++) {
+            System.out.println("\n🔹 Entering details for Order " + (i + 1) + ":");
+
+            System.out.print("Enter Order ID: ");
+            int orderId = scanner.nextInt();
+            scanner.nextLine();
+
+            System.out.print("Enter Customer Name: ");
+            String customerName = scanner.nextLine();
+
+            orders[i] = new Order(orderId, customerName);
+        }
+
+        System.out.println("\n🔄 Processing orders...");
+        for (Order order : orders) order.start();
+
+        for (Order order : orders) {
+            try {
+                order.join();
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+
+        System.out.println("\n✅ All orders processed and saved in the database.");
+        scanner.close();
+    }
+}
